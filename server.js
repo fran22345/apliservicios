@@ -12,8 +12,8 @@ app.get('/users', async (req, res) => {
 });
 
 app.post('/users', async (req, res) => {
-  const { username, password } = req.body;
-  const user = await User.create({ username, password });
+  const { nombre, apellido, profesion, linkFoto } = req.body;
+  const user = await User.create({ nombre, apellido, profesion, linkFoto });
   res.json(user);
 });
 
@@ -34,7 +34,23 @@ app.get('/scores', async (req, res) => {
   const scores = await Score.findAll({
     include: [{ model: User, as: 'user' }]
   });
+  console.log(scores);
+  
   res.json(scores);
+});
+
+app.get('/scores/:userId', async (req, res) => {
+  const { userId } = req.params;
+  try {
+    const averageScore = await Score.findOne({
+      where: { userId },
+      attributes: [[sequelize.fn('AVG', sequelize.col('value')), 'Score']]
+    });
+    res.json(averageScore);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'An error occurred while fetching the average score.' });
+  }
 });
 
 app.post('/scores', async (req, res) => {

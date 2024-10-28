@@ -12,14 +12,25 @@ const sequelize = new Sequelize(
 );
 
 const User = sequelize.define('User', {
-  username: {
+  nombre: {
     type: DataTypes.STRING,
     allowNull: false,
   },
-  password: {
+  apellido: {
     type: DataTypes.STRING,
     allowNull: false,
   },
+  profesion: {
+    type: DataTypes.STRING,
+    allowNull: false,
+  },
+  linkFoto: {
+    type: DataTypes.STRING,
+    allowNull: false,
+    validate: {
+      isUrl: true
+    }
+  }
 });
 
 const Message = sequelize.define('Message', {
@@ -36,7 +47,7 @@ const Score = sequelize.define('Score', {
   },
 });
 
-// Establecer las relaciones
+
 User.hasMany(Message, { as: 'messages' });
 Message.belongsTo(User, {
   foreignKey: 'userId',
