@@ -12,6 +12,10 @@ const sequelize = new Sequelize(
 );
 
 const User = sequelize.define('User', {
+  expoPushToken: {
+    type: DataTypes.STRING,
+    allowNull: true,
+  },
   nombre: {
     type: DataTypes.STRING,
     allowNull: false,
@@ -30,7 +34,16 @@ const User = sequelize.define('User', {
     validate: {
       isUrl: true
     }
-  }
+  },
+  description: {
+    type: DataTypes.TEXT,
+    allowNull: true,
+  },
+  price: {
+    type: DataTypes.FLOAT,
+    allowNull: false,
+    defaultValue: 0.0,
+  },
 });
 
 const Message = sequelize.define('Message', {
@@ -47,6 +60,21 @@ const Score = sequelize.define('Score', {
   },
 });
 
+const Notification = sequelize.define('Notification', {
+  title: {
+    type: DataTypes.STRING,
+    allowNull: false,
+  },
+  body: {
+    type: DataTypes.STRING,
+    allowNull: false,
+  },
+  data: {
+    type: DataTypes.JSON,
+    allowNull: true,
+  },
+});
+
 
 User.hasMany(Message, { as: 'messages' });
 Message.belongsTo(User, {
@@ -60,6 +88,18 @@ Score.belongsTo(User, {
   as: 'user',
 });
 
-sequelize.sync();
+User.hasMany(Notification, { as: 'notifications' }); 
+Notification.belongsTo(User, {
+  foreignKey: 'userId',
+  as: 'user',
+});
+
+sequelize.sync({ alter: false }) 
+  .then(() => {
+    console.log("Database synchronized!");
+  })
+  .catch((error) => {
+    console.error("Error synchronizing database:", error);
+  });
 
 module.exports = { sequelize, User, Message, Score };
