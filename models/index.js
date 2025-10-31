@@ -154,8 +154,8 @@ Services.belongsTo(User, { foreignKey: "userId" });
 User.hasMany(Score, { as: "scores" });
 Score.belongsTo(User, { foreignKey: "userId" });
 
-User.hasMany(Notification, { as: "notifications" });
-Notification.belongsTo(User, { foreignKey: "userId" });
+User.hasMany(Notification, { as: "notifications", foreignKey: "userId" });
+Notification.belongsTo(User, { as: "user", foreignKey: "userId" });
 
 User.hasMany(Pay, { as: "payments" });
 Pay.belongsTo(User, { foreignKey: "userId" });

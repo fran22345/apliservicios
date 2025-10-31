@@ -21,7 +21,7 @@ const createPayment = async (req, res) => {
           unit_price,
         },
       ],
-      notification_url: "https://30b57cddaf5b.ngrok-free.app/webhook",
+      notification_url: "https://066e1233f5b7.ngrok-free.app/webhook",
       back_urls: {
         success: "apliservi://views/homeScreen",
         failure: "http://www.tu-sitio/failure",

@@ -1,5 +1,6 @@
 const { Expo } = require('expo-server-sdk');
 const { User } = require('../models');
+const { Notification } = require("../models")
 
 let expo = new Expo();
 
@@ -9,7 +10,7 @@ const notification = async (req, res) => {
     try {
         const user = await User.findByPk(userId);
 
-        
+
         if (!user || !user.expoPushToken) {
             return res.status(404).send("User not found or token not available");
         }
@@ -35,8 +36,8 @@ const notification = async (req, res) => {
                 console.error("Error enviando notificación:", err);
             }
         }
-
-        res.sendStatus(200);
+        await Notification.create({ title, body, data, userId })
+        res.status(200).json({ message: "status notification send it" });
     } catch (error) {
         console.error(error);
         res.status(500).send("Error sending notification");
