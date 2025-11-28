@@ -49,6 +49,45 @@ const User = sequelize.define("User", {
   },
 });
 
+const serciciosActivosDb = sequelize.define("ServicioActivo", {
+  id: {
+    type: DataTypes.UUID,
+    defaultValue: DataTypes.UUIDV4,
+    primaryKey: true,
+  },
+
+  compradorId: {
+    type: DataTypes.STRING,
+    allowNull: false,
+  },
+
+  vendedorId: {
+    type: DataTypes.STRING,
+    allowNull: false,
+  },
+
+  external_reference: {
+    type: DataTypes.STRING,
+    allowNull: false,
+  },
+
+  estado: {
+    type: DataTypes.ENUM("pending", "paid", "in_progress", "completed", "cancelled"),
+    defaultValue: "pending",
+  },
+
+  tipoServicio: {
+    type: DataTypes.STRING,
+    allowNull: false,
+  },
+
+  descripcion: {
+    type: DataTypes.STRING,
+    allowNull: true,
+  },
+});
+
+
 const Message = sequelize.define("Message", {
   content: {
     type: DataTypes.TEXT,
@@ -87,12 +126,12 @@ const Pay = sequelize.define("Payment", {
     type: DataTypes.STRING,
     allowNull: false,
   },
-  title: {
-    type: DataTypes.STRING,
-    allowNull: false,
-  },
   quantity: {
     type: DataTypes.FLOAT,
+    allowNull: false,
+  },
+  description: {
+    type: DataTypes.STRING,
     allowNull: false,
   },
   unit_price: {
@@ -159,6 +198,9 @@ Notification.belongsTo(User, { as: "user", foreignKey: "userId" });
 
 User.hasMany(Pay, { as: "payments" });
 Pay.belongsTo(User, { foreignKey: "userId" });
+
+User.hasMany(serciciosActivosDb, { as: "serviciosActivosDb" });
+serciciosActivosDb.belongsTo(User, { foreignKey: "userId" });
 
 sequelize
   .sync({ force: false })

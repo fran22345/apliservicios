@@ -7,7 +7,7 @@ const client = new MercadoPagoConfig({
 
 const createPayment = async (req, res) => {
   try {
-    const { idBuyer, userId, title, quantity, unit_price } =
+    const { idBuyer, userId, title, quantity, unit_price, description } =
       req.body;
     //const external_reference = uuidv4();
 
@@ -44,7 +44,7 @@ const createPayment = async (req, res) => {
       body: JSON.stringify({
         idBuyer,
         userId,
-        title,
+        description,
         quantity,
         unit_price,
         external_reference: response.external_reference,
@@ -54,7 +54,7 @@ const createPayment = async (req, res) => {
     res.json({ response });
   } catch (error) {
     console.error(error);
-    res.status(500).send("Error al crear la preferencia");
+    res.status(500).send("Error al guardar la preferencia");
   }
 };
 

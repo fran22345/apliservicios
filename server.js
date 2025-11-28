@@ -1,9 +1,10 @@
 const express = require("express");
 const cors = require("cors");
-const axios = require("axios")
-const { sequelize, User, Message, Score, Pay, Services, Notification } = require("./models");
+const { sequelize, User, Message, Score, Services, Notification, Pay } = require("./models");
+const { webhookHandler } = require("./controllers/webhookHandler");
 require("dotenv").config();
 const { createPayment } = require("./controllers/payment.controllers");
+const { serciciosActivos, serciciosActivosBuyer } = require("./controllers/serviciosActivos")
 const { notification } = require("./controllers/notification")
 const { v4: uuidv4 } = require("uuid");
 const morgan = require("morgan");
@@ -21,58 +22,22 @@ app.use(morgan("dev"));
 app.use(cors());
 
 app.post("/notification", notification);
-
 app.post("/crear-preferencia", createPayment);
-
-app.post("/webhook", async (req, res) => {
-
-  const { type } = req.query;
-  const dataId = req.query["data.id"] || req.body?.data?.id;
-
-  if (!type || !dataId) {
-    console.log("Webhook sin tipo o data.id");
-    return res.sendStatus(200);
-  }
-
-  try {
-    if (type === "payment") {
-
-      axios
-        .post("http://localhost:3000/notification",
-          {
-            "userId": "9215a419-056f-40c6-aded-dc3a5b474b9e",//HARCODEADO, CAMBIAR EN PROD O SI BORRO LA DB
-            "title": "tienes un cliente"
-            , "body": "hecho"
-            , "data": "algo"
-          })
-
-      const payment = await new Payment(client).get({ id: dataId });
-      console.log("Pago obtenido:", payment);
-
-    } else {
-      console.log("Tipo de webhook no manejado:", type);
-    }
-
-    res.sendStatus(200);
-  } catch (error) {
-    console.error("Error en el webhook:", error.message);
-    res.status(500).json({ error: error.message });
-  }
-});
-
-
+app.post("/webhook", webhookHandler);
+app.get("/serviciosActivos", serciciosActivos)
+app.get("/serviciosActivosBuyer", serciciosActivosBuyer)
 
 app.post("/guardar-preferencia", async (req, res) => {
-  //pay
-  const { idBuyer, userId, title, quantity, unit_price, external_reference } =
+
+  const { idBuyer, userId, quantity, description, unit_price, external_reference } =
     req.body;
 
   try {
     await Pay.create({
       userId,
       idBuyer,
-      title,
       quantity,
+      description,
       unit_price,
       status: "pending",
       external_reference,
@@ -95,7 +60,8 @@ app.get("/services/:userId", async (req, res) => {
         as: "User",
         include: [
           { model: Message, as: "messages" },
-          { model: Score, as: "scores" }
+          { model: Score, as: "scores" },
+          { model: Services, as: "services" }
         ]
       },
     });
@@ -161,6 +127,34 @@ app.post("/users", async (req, res) => {
 
 
 });
+
+app.get("/servicioActivoUser/:id", async (req, res) => {
+  const { id } = req.params;
+  try {
+    const service = await Pay.findOne({
+      where: { userId: id },
+    })
+    res.json(service)
+  } catch (error) {
+    console.error(error)
+    res.status(500).json({ error: "An error occurrd while fetching service" })
+  }
+})
+
+app.get("/servicioActivoBuyer/:id", async (req, res) => {
+  const { id } = req.params;
+  try {
+    const service = await Pay.findOne({
+      where: { idBuyer: id },
+    })
+    res.json(service)
+  } catch (error) {
+    console.error(error)
+    res.status(500).json({ error: "An error occurrd while fetching service" })
+  }
+})
+
+
 
 app.get("/users/:googleId", async (req, res) => {
   const { googleId } = req.params;
@@ -253,8 +247,8 @@ app.get("/notifRequest", async (req, res) => {
 
 app.post("/notifErase", async (req, res) => {
   try {
-    const {id} = req.body;
-    
+    const { id } = req.body;
+
 
     const eraseNotif = await Notification.destroy({
       where: { id },
