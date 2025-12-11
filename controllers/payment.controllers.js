@@ -34,7 +34,7 @@ const createPayment = async (req, res) => {
     const preference = new Preference(client);
     const response = await preference.create({ body });
 
-    await fetch("http://localhost:3000/guardar-preferencia", {
+    await fetch(`${process.env.LOCAL_HOST}/guardar-preferencia`, {
       //pay
       //asocia el id del vendedor con el id del usuario
       method: "POST",

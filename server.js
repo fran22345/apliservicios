@@ -1,14 +1,16 @@
 const express = require("express");
 const cors = require("cors");
-const { sequelize, User, Message, Score, Services, Notification, Pay } = require("./models");
+const { sequelize, User, Message, Score, Services, Notification, Pay, Availability } = require("./models");
 const { webhookHandler } = require("./controllers/webhookHandler");
 require("dotenv").config();
 const { createPayment } = require("./controllers/payment.controllers");
 const { serciciosActivos, serciciosActivosBuyer } = require("./controllers/serviciosActivos")
 const { notification } = require("./controllers/notification")
+const { scores } = require("./controllers/controller.scores")
 const { v4: uuidv4 } = require("uuid");
 const morgan = require("morgan");
 const { MercadoPagoConfig, Payment } = require("mercadopago");
+const { default: axios } = require("axios");
 
 const client = new MercadoPagoConfig({
   accessToken: process.env.MP_ACCESS_TOKEN,
@@ -20,6 +22,8 @@ const app = express();
 app.use(express.json());
 app.use(morgan("dev"));
 app.use(cors());
+app.disable("etag");
+
 
 app.post("/notification", notification);
 app.post("/crear-preferencia", createPayment);
@@ -50,27 +54,34 @@ app.post("/guardar-preferencia", async (req, res) => {
 });
 
 
-app.get("/services/:userId", async (req, res) => {
-  const { userId } = req.params;
+app.get("/services/:id", async (req, res) => {
+  const { id } = req.params;
+
   try {
-    const person = await Services.findOne({
-      where: { userId },
-      include: {
-        model: User,
-        as: "User",
-        include: [
-          { model: Message, as: "messages" },
-          { model: Score, as: "scores" },
-          { model: Services, as: "services" }
-        ]
-      },
+    const service = await Services.findOne({
+      where: { id },
+      include: [
+        {
+          model: User,
+          as: "User",
+          include: [
+            { model: Message, as: "messages" },
+            { model: Services, as: "services" },
+            { model: Score, as: "scoresReceived" },
+            { model: Score, as: "scoresGiven" },
+          ],
+        },
+      ],
     });
-    res.json(person);
+
+    res.json(service);
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: "An error occurred while fetching person." });
+    res.status(500).json({ error: "An error occurred while fetching service." });
   }
 });
+
+
 
 app.get("/services", async (req, res) => {
   const users = await Services.findAll({
@@ -132,7 +143,7 @@ app.get("/servicioActivoUser/:id", async (req, res) => {
   const { id } = req.params;
   try {
     const service = await Pay.findOne({
-      where: { userId: id },
+      where: { id },
     })
     res.json(service)
   } catch (error) {
@@ -143,9 +154,10 @@ app.get("/servicioActivoUser/:id", async (req, res) => {
 
 app.get("/servicioActivoBuyer/:id", async (req, res) => {
   const { id } = req.params;
+
   try {
     const service = await Pay.findOne({
-      where: { idBuyer: id },
+      where: { id },
     })
     res.json(service)
   } catch (error) {
@@ -153,8 +165,6 @@ app.get("/servicioActivoBuyer/:id", async (req, res) => {
     res.status(500).json({ error: "An error occurrd while fetching service" })
   }
 })
-
-
 
 app.get("/users/:googleId", async (req, res) => {
   const { googleId } = req.params;
@@ -169,6 +179,56 @@ app.get("/users/:googleId", async (req, res) => {
   }
 });
 
+app.get("/users/id/:userId", async (req, res) => {
+  const { userId } = req.params;
+  try {
+    const person = await User.findOne({
+      where: { id: userId },
+    });
+    res.json(person);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "An error occurred while fetching person." });
+  }
+});
+
+app.get("/users/buyerid/:buyerid", async (req, res) => {
+  const { buyerid } = req.params;
+  try {
+    const person = await User.findOne({
+      where: { id: buyerid },
+    });
+    res.json(person);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "An error occurred while fetching person." });
+  }
+});
+
+app.put("/servicioConcluido", async (req, res) => {
+  const { servId, buyerId } = req.body
+  try {
+
+    await Promise.all([
+      Pay.update({ status: "finalized" }, { where: { id: servId } }),
+
+      axios.post(`${process.env.LOCAL_HOST}/notification`, {
+        userId: buyerId,
+        title: "Servicio concluido",
+        body: "La persona ha concluido su tarea",
+        data: {
+          evento: "servicio_terminado",
+          route: "/views/homeScreen"
+        },
+      }),
+    ]);
+
+    res.status(200).json({ message: "Cambiado a Finalizado" })
+  } catch (error) {
+    res.status(500).json({ error: "error al actualizar" })
+  }
+})
+
 app.get("/messages", async (req, res) => {
   const messages = await Message.findAll({
     include: [{ model: User, as: "user" }],
@@ -182,36 +242,28 @@ app.post("/messages", async (req, res) => {
   res.json(message);
 });
 
-app.get("/scores", async (req, res) => {
-  const scores = await Score.findAll({
-    include: [{ model: User, as: "user" }],
-  });
-  console.log(scores);
-
-  res.json(scores);
-});
 
 app.get("/scores/:userId", async (req, res) => {
   const { userId } = req.params;
+
   try {
-    const averageScore = await Score.findOne({
+    const result = await Score.findOne({
       where: { userId },
-      attributes: [[sequelize.fn("AVG", sequelize.col("value")), "Score"]],
+      attributes: [
+        [sequelize.fn("AVG", sequelize.col("value")), "value"]
+      ],
+      raw: true
     });
-    res.json(averageScore);
+
+    res.json(result);
   } catch (error) {
     console.error(error);
-    res
-      .status(500)
-      .json({ error: "An error occurred while fetching the average score." });
+    res.status(500).json({ error: "Error getting average score" });
   }
 });
 
-app.post("/scores", async (req, res) => {
-  const { userId, value } = req.body;
-  const score = await Score.create({ userId, value });
-  res.json(score);
-});
+
+app.post("/scores", scores);
 
 
 app.get("/notifRequest", async (req, res) => {
@@ -262,6 +314,142 @@ app.post("/notifErase", async (req, res) => {
   } catch (error) {
     console.error("Error al eliminar la notificación:", error);
     res.status(500).json({ message: "Error interno del servidor" });
+  }
+});
+
+app.get("/score/check", async (req, res) => {
+  const { buyerId, payId } = req.query;
+
+  if (!buyerId || !payId) {
+    return res.status(400).json({ error: "Faltan parámetros buyerId o payId" });
+  }
+
+  try {
+    const score = await Score.findOne({ where: { buyerId, payId } });
+    res.json(score || {});
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Error al buscar calificación" });
+  }
+});
+
+app.post("/availability/request", async (req, res) => {
+  const { providerId, buyerId, serviceId } = req.body;
+
+  try {
+    const request = await Availability.create({
+      providerId,
+      buyerId,
+      serviceId,
+      status: "pending",
+    });
+
+    await axios.post(`${process.env.LOCAL_HOST}/notification`, {
+      userId: providerId,
+      title: "Consulta de disponibilidad",
+      body: "Un usuario quiere saber si estás disponible para un servicio.",
+      data: {
+        route: "/views/serviciosActivos",
+        availabilityId: request.id
+      }
+    });
+
+    res.json(request);
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ error: "No se pudo crear la consulta" });
+  }
+});
+
+app.get("/availability/check", async (req, res) => {
+  const { buyerId, providerId, serviceId } = req.query;
+
+  const record = await Availability.findOne({
+    where: { buyerId, providerId, serviceId },
+    order: [["createdAt", "DESC"]]
+  });
+
+  res.json(record || {});
+});
+
+app.put("/availability/respond", async (req, res) => {
+  const { availabilityId, response } = req.body;
+
+  try {
+    const record = await Availability.findOne({
+      where: { id: availabilityId },
+    });
+
+    if (!record) return res.status(404).json({ error: "No encontrado" });
+
+    record.status = response; // "accepted" o "rejected"
+    await record.save();
+
+    // notificación al comprador
+    await axios.post(`${process.env.LOCAL_HOST}/notification`, {
+      userId: record.buyerId,
+      title: "Disponibilidad actualizada",
+      body:
+        response === "accepted"
+          ? "El proveedor está disponible"
+          : "El proveedor no está disponible",
+      data: {
+        route: "/details",
+        availabilityId
+      }
+    });
+
+    res.json(record);
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ error: "Error actualizando disponibilidad" });
+  }
+});
+
+app.get("/availability/:id", async (req, res) => {
+  try {
+    const a = await Availability.findByPk(req.params.id);
+
+    if (!a) return res.status(404).json({ error: "Availability no encontrado" });
+    res.json(a);
+
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ error: "Error actualizando availability" });
+  }
+}); app.put("/availability/response/:id", async (req, res) => {
+  const { status } = req.body;
+
+  try {
+    const a = await Availability.findByPk(req.params.id);
+
+    if (!a) return res.status(404).json({ error: "Availability no encontrado" });
+
+    a.status = status;
+    await a.save();
+
+    res.json(a);
+
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ error: "Error actualizando availability" });
+  }
+});
+
+
+app.get("/availability", async (req, res) => {
+  const { userId } = req.query;
+
+  try {
+    const list = await Availability.findAll({
+      where: { providerId: userId },
+      order: [["createdAt", "DESC"]],
+    });
+
+    res.json(list);
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ error: "Error obteniendo disponibilidad" });
   }
 });
 

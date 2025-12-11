@@ -12,6 +12,7 @@ const sequelize = new Sequelize(
   }
 );
 
+
 const User = sequelize.define("User", {
   id: {
     type: DataTypes.STRING,
@@ -32,16 +33,12 @@ const User = sequelize.define("User", {
   linkFoto: {
     type: DataTypes.STRING,
     allowNull: false,
-    validate: {
-      isUrl: true,
-    },
+    validate: { isUrl: true },
   },
   email: {
     type: DataTypes.STRING,
     allowNull: false,
-    validate: {
-      isEmail: true,
-    },
+    validate: { isEmail: true },
   },
   googleId: {
     type: DataTypes.STRING,
@@ -55,38 +52,31 @@ const serciciosActivosDb = sequelize.define("ServicioActivo", {
     defaultValue: DataTypes.UUIDV4,
     primaryKey: true,
   },
-
   compradorId: {
     type: DataTypes.STRING,
     allowNull: false,
   },
-
   vendedorId: {
     type: DataTypes.STRING,
     allowNull: false,
   },
-
   external_reference: {
     type: DataTypes.STRING,
     allowNull: false,
   },
-
   estado: {
     type: DataTypes.ENUM("pending", "paid", "in_progress", "completed", "cancelled"),
     defaultValue: "pending",
   },
-
   tipoServicio: {
     type: DataTypes.STRING,
     allowNull: false,
   },
-
   descripcion: {
     type: DataTypes.STRING,
     allowNull: true,
   },
 });
-
 
 const Message = sequelize.define("Message", {
   content: {
@@ -95,12 +85,57 @@ const Message = sequelize.define("Message", {
   },
 });
 
-const Score = sequelize.define("Score", {
-  value: {
-    type: DataTypes.FLOAT,
-    allowNull: false,
+const Score = sequelize.define(
+  "Score",
+  {
+    buyerId: {
+      type: DataTypes.STRING,
+      allowNull: false,
+    },
+    payId: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+    },
+    value: {
+      type: DataTypes.FLOAT,
+      allowNull: false,
+    },
+    userId: {
+      type: DataTypes.STRING,
+      allowNull: false,
+    },
   },
+  {
+    tableName: "scores",
+    freezeTableName: true,
+    timestamps: true,
+  }
+);
+
+const Availability = sequelize.define("Availability", {
+  id: {
+    type: DataTypes.UUID,
+    primaryKey: true,
+    defaultValue: DataTypes.UUIDV4,
+  },
+  providerId: {
+    type: DataTypes.STRING,
+    allowNull: false
+  },
+  buyerId: {
+    type: DataTypes.STRING,
+    allowNull: false
+  },
+  serviceId: {
+    type: DataTypes.INTEGER,
+    allowNull: false
+  },
+  status: {
+    type: DataTypes.ENUM("pending", "accepted", "rejected"),
+    defaultValue: "pending"
+  }
 });
+
 
 const Notification = sequelize.define("Notification", {
   title: {
@@ -164,9 +199,7 @@ const Services = sequelize.define("Services", {
   linkFoto: {
     type: DataTypes.STRING,
     allowNull: false,
-    validate: {
-      isUrl: true,
-    },
+    validate: { isUrl: true },
   },
   description: {
     type: DataTypes.TEXT,
@@ -184,31 +217,52 @@ const Services = sequelize.define("Services", {
 });
 
 
+
+
 User.hasMany(Message, { as: "messages" });
 Message.belongsTo(User, { foreignKey: "userId" });
+
 
 User.hasMany(Services, { as: "services" });
 Services.belongsTo(User, { foreignKey: "userId" });
 
-User.hasMany(Score, { as: "scores" });
-Score.belongsTo(User, { foreignKey: "userId" });
+
+User.hasMany(serciciosActivosDb, { foreignKey: "compradorId", as: "comprasActivas" });
+serciciosActivosDb.belongsTo(User, { foreignKey: "compradorId", as: "comprador" });
+
+User.hasMany(serciciosActivosDb, { foreignKey: "vendedorId", as: "ventasActivas" });
+serciciosActivosDb.belongsTo(User, { foreignKey: "vendedorId", as: "vendedor" });
+
+
+User.hasMany(Score, { foreignKey: "userId", as: "scoresReceived" });
+Score.belongsTo(User, { foreignKey: "userId", as: "seller" });
+
+User.hasMany(Score, { foreignKey: "buyerId", as: "scoresGiven" });
+Score.belongsTo(User, { foreignKey: "buyerId", as: "buyer" });
+
+Availability.belongsTo(User, { foreignKey: "providerId", as: "provider" });
+Availability.belongsTo(User, { foreignKey: "buyerId", as: "buyer" });
+Availability.belongsTo(Services, { foreignKey: "serviceId", as: "service" });
+
+
+Score.belongsTo(Pay, { foreignKey: "payId", as: "payment" });
+Pay.hasMany(Score, { foreignKey: "payId", as: "scores" });
+
 
 User.hasMany(Notification, { as: "notifications", foreignKey: "userId" });
 Notification.belongsTo(User, { as: "user", foreignKey: "userId" });
 
-User.hasMany(Pay, { as: "payments" });
-Pay.belongsTo(User, { foreignKey: "userId" });
 
-User.hasMany(serciciosActivosDb, { as: "serviciosActivosDb" });
-serciciosActivosDb.belongsTo(User, { foreignKey: "userId" });
+User.hasMany(Pay, { foreignKey: "userId", as: "payments" });
+Pay.belongsTo(User, { foreignKey: "userId", as: "seller" });
+
+User.hasMany(Pay, { foreignKey: "googleId", as: "purchases" });
+Pay.belongsTo(User, { foreignKey: "googleId", as: "buyer" });
+
 
 sequelize
   .sync({ force: false })
-  .then(() => {
-    console.log("Database synchronized!");
-  })
-  .catch((error) => {
-    console.error("Error synchronizing database:", error);
-  });
+  .then(() => console.log("Database synchronized!"))
+  .catch((error) => console.error("Error synchronizing database:", error));
 
-module.exports = { sequelize, User, Message, Score, Pay, Notification, Services };
+module.exports = { sequelize, User, Message, Score, Pay, Notification, Services, Availability };
