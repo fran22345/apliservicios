@@ -61,7 +61,7 @@ const notification = async (req, res) => {
       .map(ticket => ticket.id);
 
     if (receiptIds.length > 0) {
-
+      await new Promise(resolve => setTimeout(resolve, 15000));
       const receiptChunks = expo.chunkPushNotificationReceiptIds(receiptIds);
 
       for (let chunk of receiptChunks) {
