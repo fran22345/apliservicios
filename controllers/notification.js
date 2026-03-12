@@ -7,13 +7,17 @@ const notification = async (req, res) => {
   const { userId, title, body, data } = req.body;
 
   try {
+
     const user = await User.findByPk(userId);
 
     if (!user || !user.expoPushToken) {
       return res.status(404).send("User not found or token not available");
     }
 
+    console.log("Sending notification to token:", user.expoPushToken);
+
     if (!Expo.isExpoPushToken(user.expoPushToken)) {
+      console.error("Invalid Expo push token:", user.expoPushToken);
       return res.status(400).send("Invalid Expo push token");
     }
 
@@ -22,21 +26,63 @@ const notification = async (req, res) => {
       sound: "default",
       title,
       body,
-      data,
+      data: typeof data === "object" ? data : { value: data },
     };
 
     const chunks = expo.chunkPushNotifications([message]);
 
+    let tickets = [];
+
     for (let chunk of chunks) {
-      await expo.sendPushNotificationsAsync(chunk);
+
+      try {
+
+        const ticketChunk = await expo.sendPushNotificationsAsync(chunk);
+
+        console.log("Expo ticket response:");
+        console.log(JSON.stringify(ticketChunk, null, 2));
+
+        tickets.push(...ticketChunk);
+
+      } catch (err) {
+
+        console.error("Error sending notification:", err);
+
+      }
     }
 
+    // Guardar notificación en DB
     await Notification.create({ title, body, data, userId });
 
-    res.status(200).json({ message: "Notification sent" });
+    // ---- CHECK RECEIPTS ----
+
+    const receiptIds = tickets
+      .filter(ticket => ticket.id)
+      .map(ticket => ticket.id);
+
+    if (receiptIds.length > 0) {
+
+      const receiptChunks = expo.chunkPushNotificationReceiptIds(receiptIds);
+
+      for (let chunk of receiptChunks) {
+
+        const receipts = await expo.getPushNotificationReceiptsAsync(chunk);
+
+        console.log("Expo receipts response:");
+        console.log(JSON.stringify(receipts, null, 2));
+
+      }
+    }
+
+    res.status(200).json({
+      message: "Notification processed",
+      tickets
+    });
 
   } catch (error) {
-    console.error(error);
+
+    console.error("Notification error:", error);
+
     res.status(500).send("Error sending notification");
   }
 };
