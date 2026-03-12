@@ -10,7 +10,7 @@ const { scores } = require("./controllers/controller.scores")
 const { v4: uuidv4 } = require("uuid");
 const morgan = require("morgan");
 const { MercadoPagoConfig, Payment } = require("mercadopago");
-const { default: axios } = require("axios");
+const axios = require("axios");
 
 const client = new MercadoPagoConfig({
   accessToken: process.env.MP_ACCESS_TOKEN,
