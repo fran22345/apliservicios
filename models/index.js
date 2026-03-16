@@ -10,6 +10,12 @@ const sequelize = new Sequelize(
     dialect: process.env.DB_DIALECT,
     logging: false,
     port: process.env.DB_PORT || 5432,
+    dialectOptions: {
+      ssl: {
+        require: true,
+        rejectUnauthorized: false,
+      },
+    },
   }
 );
 
