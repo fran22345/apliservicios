@@ -254,6 +254,7 @@ app.get("/scores/:googleId", async (req, res) => {
       include: [
         {
           model: User,
+          as: "seller",
           where: { googleId },
           attributes: [],
         },
