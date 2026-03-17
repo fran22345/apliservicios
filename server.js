@@ -243,16 +243,22 @@ app.post("/messages", async (req, res) => {
 });
 
 
-app.get("/scores/:userId", async (req, res) => {
-  const { userId } = req.params;
+app.get("/scores/:googleId", async (req, res) => {
+  const { googleId } = req.params;
 
   try {
     const result = await Score.findOne({
-      where: { userId },
       attributes: [
-        [sequelize.fn("AVG", sequelize.col("value")), "value"]
+        [sequelize.fn("AVG", sequelize.col("value")), "value"],
       ],
-      raw: true
+      include: [
+        {
+          model: User,
+          where: { googleId },
+          attributes: [],
+        },
+      ],
+      raw: true,
     });
 
     res.json(result);
