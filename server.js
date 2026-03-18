@@ -150,7 +150,7 @@ app.patch("/users", async (req, res) => {
       return res.status(404).json({ error: "User not found" });
     }
 
-    const updatedUser = await User.findByPk(id);
+    const updatedUser = await User.findByPk(googleId);
 
     res.json(updatedUser);
   } catch (error) {
