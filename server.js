@@ -139,7 +139,8 @@ app.post("/users", async (req, res) => {
 
 app.patch("/users", async (req, res) => {
   const { googleId, ...userUpdate } = req.body;
-
+  console.log(userUpdate);
+  
   try {
     const [updated] = await User.update(userUpdate, {
       where: { googleId },
