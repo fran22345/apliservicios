@@ -140,7 +140,7 @@ app.post("/users", async (req, res) => {
 app.patch("/users", async (req, res) => {
   const { googleId, ...userUpdate } = req.body;
   console.log(googleId);
-  
+
   try {
     const [updated] = await User.update(userUpdate, {
       where: { googleId },
@@ -226,28 +226,43 @@ app.get("/users/buyerid/:buyerid", async (req, res) => {
 });
 
 app.put("/servicioConcluido", async (req, res) => {
-  const { servId, buyerId } = req.body
+  const { servId, buyerId } = req.body;
+
+  if (!servId || !buyerId) {
+    return res.status(400).json({ error: "Faltan datos" });
+  }
+
   try {
+    const [updated] = await Pay.update(
+      { status: "finalized" },
+      { where: { id: servId } }
+    );
 
-    await Promise.all([
-      Pay.update({ status: "finalized" }, { where: { id: servId } }),
+    if (updated === 0) {
+      return res.status(404).json({ error: "Servicio no encontrado" });
+    }
 
-      axios.post(`${process.env.LOCAL_HOST}/notification`, {
+    // notificación separada
+    try {
+      await axios.post(`${process.env.LOCAL_HOST}/notification`, {
         userId: buyerId,
         title: "Servicio concluido",
         body: "La persona ha concluido su tarea",
         data: {
           evento: "servicio_terminado",
-          route: "/views/homeScreen"
+          route:  `/views/servicio/${servId}`,
         },
-      }),
-    ]);
+      });
+    } catch (err) {
+      console.log("Error enviando notificación:", err.message);
+    }
 
-    res.status(200).json({ message: "Cambiado a Finalizado" })
+    res.status(200).json({ message: "Cambiado a Finalizado" });
   } catch (error) {
-    res.status(500).json({ error: "error al actualizar" })
+    console.error(error);
+    res.status(500).json({ error: "error al actualizar" });
   }
-})
+});
 
 app.get("/messages", async (req, res) => {
   const messages = await Message.findAll({
