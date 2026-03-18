@@ -135,8 +135,27 @@ app.post("/users", async (req, res) => {
   } catch (error) {
     res.status(500).json({ error: error.message })
   }
+});
 
+app.patch("/users", async (req, res) => {
+  const { googleId, ...userUpdate } = req.body;
 
+  try {
+    const [updated] = await User.update(userUpdate, {
+      where: { googleId },
+    });
+
+    if (updated === 0) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    const updatedUser = await User.findByPk(id);
+
+    res.json(updatedUser);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Error updating user" });
+  }
 });
 
 app.get("/servicioActivoUser/:id", async (req, res) => {
