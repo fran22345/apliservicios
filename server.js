@@ -250,7 +250,7 @@ app.put("/servicioConcluido", async (req, res) => {
         body: "La persona ha concluido su tarea",
         data: {
           evento: "servicio_terminado",
-          route:  `/views/servicio/${servId}`,
+          route:  `/servBuyerDetails/${servId}`,
         },
       });
     } catch (err) {
