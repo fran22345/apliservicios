@@ -391,7 +391,7 @@ app.post("/availability/request", async (req, res) => {
       title: "Consulta de disponibilidad",
       body: "Un usuario quiere saber si estás disponible para un servicio.",
       data: {
-        route: "/views/serviciosActivos",
+        route: `/servUserDetails/${serviceId}`,
         availabilityId: request.id
       }
     });
