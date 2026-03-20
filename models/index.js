@@ -233,7 +233,7 @@ Message.belongsTo(User, { foreignKey: "userId" });
 User.hasMany(Services, { as: "services" });
 Services.belongsTo(User, { foreignKey: "userId" });
 Score.belongsTo(Services, {foreignKey: "serviceId", as:"service"})
-Services.hasMany(Score, { foreignKey: "serviceId", as: "scores" });
+Services.hasMany(Score, { as: "scores", foreignKey: "serviceId" });
 
 User.hasMany(serciciosActivosDb, { foreignKey: "compradorId", as: "comprasActivas" });
 serciciosActivosDb.belongsTo(User, { foreignKey: "compradorId", as: "comprador" });
