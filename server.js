@@ -83,15 +83,40 @@ app.get("/services/:id", async (req, res) => {
 
 
 
+const { Sequelize } = require("sequelize");
+
 app.get("/services", async (req, res) => {
-  const users = await Services.findAll({
-    include: [{
-      model: User,
-      as: "User",
-      attributes: ["id"]
-    }]
-  });
-  res.json(users);
+  try {
+    const services = await Services.findAll({
+      attributes: [
+        "id",
+        "nombre",
+        "profesion",
+        [
+          Sequelize.fn("AVG", Sequelize.col("scores.score")),
+          "puntuacion",
+        ],
+      ],
+      include: [
+        {
+          model: User,
+          as: "User",
+          attributes: ["id"],
+        },
+        {
+          model: Score,
+          as: "scores",
+          attributes: [],
+        },
+      ],
+      group: ["Services.id", "User.id"],
+    });
+
+    res.json(services);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Error al traer servicios" });
+  }
 });
 
 app.post("/services", async (req, res) => {
@@ -250,7 +275,7 @@ app.put("/servicioConcluido", async (req, res) => {
         body: "La persona ha concluido su tarea",
         data: {
           evento: "servicio_terminado",
-          route:  `/servBuyerDetails/${servId}`,
+          route: `/servBuyerDetails/${servId}`,
         },
       });
     } catch (err) {
@@ -391,7 +416,7 @@ app.post("/availability/request", async (req, res) => {
       title: "Consulta de disponibilidad",
       body: "Un usuario quiere saber si estás disponible para un servicio.",
       data: {
-        route: `/servUserDetails/${serviceId}`,
+        route: `/availabilityDetails/${serviceId}`,
         availabilityId: request.id
       }
     });
@@ -459,7 +484,9 @@ app.get("/availability/:id", async (req, res) => {
     console.log(err);
     res.status(500).json({ error: "Error actualizando availability" });
   }
-}); app.put("/availability/response/:id", async (req, res) => {
+});
+
+app.put("/availability/response/:id", async (req, res) => {
   const { status } = req.body;
 
   try {
