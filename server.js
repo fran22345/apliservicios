@@ -93,7 +93,7 @@ app.get("/services", async (req, res) => {
         "nombre",
         "profesion",
         [
-          Sequelize.fn("AVG", Sequelize.col("scores.score")),
+          Sequelize.fn("AVG", Sequelize.col("scores.value")),
           "puntuacion",
         ],
       ],
