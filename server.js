@@ -477,6 +477,26 @@ app.put("/availability/respond", async (req, res) => {
   }
 });
 
+app.put("/availability/conclude", async (req, res) => {
+  const { serviceId } = req.params;
+  
+  try {
+    const record = await Availability.findOne({
+      where: { serviceId },
+    });
+
+    if (!record) return res.status(404).json({ error: "No encontrado" });
+
+    record.status = "conclude"; 
+    await record.save();
+
+    res.json(record);
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ error: "Error actualizando disponibilidad" });
+  }
+});
+
 app.get("/availability/:id", async (req, res) => {
   try {
     const a = await Availability.findByPk(req.params.id);
