@@ -478,16 +478,17 @@ app.put("/availability/respond", async (req, res) => {
 });
 
 app.put("/availability/conclude", async (req, res) => {
-  const { serviceId } = req.params;
+  const userId = req.params;
+  console.log(userId);
   
   try {
     const record = await Availability.findOne({
-      where: { serviceId },
+      where: { providerId: userId },
     });
 
     if (!record) return res.status(404).json({ error: "No encontrado" });
 
-    record.status = "conclude"; 
+    record.status = "conclude";
     await record.save();
 
     res.json(record);
