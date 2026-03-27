@@ -487,7 +487,7 @@ app.put("/availability/conclude/:userId", async (req, res) => {
 
     if (!record) return res.status(404).json({ error: "No encontrado" });
 
-    record.status = "conclude";
+    record.status = "completed";
     await record.save();
 
     res.json(record);

@@ -138,7 +138,12 @@ const Availability = sequelize.define("Availability", {
     allowNull: false
   },
   status: {
-    type: DataTypes.ENUM("pending", "accepted", "rejected"),
+    type: DataTypes.ENUM(
+      "pending",
+      "accepted",
+      "rejected",
+      "in_progress",
+      "completed"),
     defaultValue: "pending"
   }
 });
@@ -232,7 +237,7 @@ Message.belongsTo(User, { foreignKey: "userId" });
 
 User.hasMany(Services, { as: "services" });
 Services.belongsTo(User, { foreignKey: "userId" });
-Score.belongsTo(Services, {foreignKey: "serviceId", as:"service"})
+Score.belongsTo(Services, { foreignKey: "serviceId", as: "service" })
 Services.hasMany(Score, { as: "scores", foreignKey: "serviceId" });
 
 User.hasMany(serciciosActivosDb, { foreignKey: "compradorId", as: "comprasActivas" });
@@ -269,7 +274,7 @@ Pay.belongsTo(User, { foreignKey: "googleId", as: "buyer" });
 
 
 sequelize
-  .sync({ force: false })
+  .sync({ force: true })
   .then(() => console.log("Database synchronized!"))
   .catch((error) => console.error("Error synchronizing database:", error));
 
