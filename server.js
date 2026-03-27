@@ -477,10 +477,9 @@ app.put("/availability/respond", async (req, res) => {
   }
 });
 
-app.put("/availability/conclude", async (req, res) => {
-  const userId = req.params;
-  console.log(userId);
-  
+app.put("/availability/conclude/:userId", async (req, res) => {
+  const { userId } = req.params;
+
   try {
     const record = await Availability.findOne({
       where: { providerId: userId },
