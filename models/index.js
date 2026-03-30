@@ -110,7 +110,21 @@ const serciciosActivosDb = sequelize.define("ServicioActivo", {
 });
 
 const Message = sequelize.define("Message", {
-  content: { type: DataTypes.TEXT, allowNull: false },
+  content: {
+    type: DataTypes.TEXT,
+    allowNull: false,
+  },
+});
+
+const Conversation = sequelize.define("Conversation", {
+  user1Id: {
+    type: DataTypes.STRING,
+    allowNull: false,
+  },
+  user2Id: {
+    type: DataTypes.STRING,
+    allowNull: false,
+  },
 });
 
 const Score = sequelize.define(
@@ -143,26 +157,6 @@ const Pay = sequelize.define("Payment", {
   external_reference: { type: DataTypes.STRING, allowNull: false },
 });
 
-module.exports = (sequelize, DataTypes) => {
-  const Message = sequelize.define("Message", {
-    text: {
-      type: DataTypes.TEXT,
-      allowNull: false,
-    },
-  });
-
-  Message.associate = (models) => {
-    Message.belongsTo(models.Conversation, {
-      foreignKey: "conversationId",
-    });
-
-    Message.belongsTo(models.User, {
-      foreignKey: "senderId",
-    });
-  };
-
-  return Message;
-};
 
 
 // Services
@@ -176,11 +170,20 @@ Services.belongsTo(User, {
 
 // Message
 User.hasMany(Message, {
-  foreignKey: "userId",
+  foreignKey: "senderId",
   as: "messages",
 });
+
 Message.belongsTo(User, {
-  foreignKey: "userId",
+  foreignKey: "senderId",
+});
+
+Conversation.hasMany(Message, {
+  foreignKey: "conversationId",
+});
+
+Message.belongsTo(Conversation, {
+  foreignKey: "conversationId",
 });
 
 // Score
@@ -285,7 +288,7 @@ Pay.hasMany(Score, {
 
 
 sequelize
-  .sync({ alter: false })
+  .sync({ alter: true })
   .then(() => console.log("Database synchronized!"))
   .catch((error) => console.error("Error:", error));
 
@@ -296,6 +299,7 @@ module.exports = {
   Availability,
   serciciosActivosDb,
   Message,
+  Conversation,
   Score,
   Pay,
   Notification,
