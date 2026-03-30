@@ -546,7 +546,37 @@ app.get("/availability", async (req, res) => {
   }
 });
 
+app.post("/messages", async (req, res) => {
+  try {
+    const { conversationId, senderId, text } = req.body;
 
+    const message = await Message.create({
+      conversationId,
+      senderId,
+      text,
+    });
+
+    res.json(message);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Error al crear mensaje" });
+  }
+});
+
+app.get("/messages/:conversationId", async (req, res) => {
+  try {
+    const { conversationId } = req.params;
+
+    const messages = await Message.findAll({
+      where: { conversationId },
+      order: [["createdAt", "ASC"]],
+    });
+
+    res.json(messages);
+  } catch (error) {
+    res.status(500).json({ error: "Error al obtener mensajes" });
+  }
+});
 
 const PORT = process.env.PORT || 3000;
 

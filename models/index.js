@@ -143,6 +143,27 @@ const Pay = sequelize.define("Payment", {
   external_reference: { type: DataTypes.STRING, allowNull: false },
 });
 
+module.exports = (sequelize, DataTypes) => {
+  const Message = sequelize.define("Message", {
+    text: {
+      type: DataTypes.TEXT,
+      allowNull: false,
+    },
+  });
+
+  Message.associate = (models) => {
+    Message.belongsTo(models.Conversation, {
+      foreignKey: "conversationId",
+    });
+
+    Message.belongsTo(models.User, {
+      foreignKey: "senderId",
+    });
+  };
+
+  return Message;
+};
+
 
 // Services
 User.hasMany(Services, {
@@ -264,7 +285,7 @@ Pay.hasMany(Score, {
 
 
 sequelize
-  .sync({ alter: false })
+  .sync({ alter: true })
   .then(() => console.log("Database synchronized!"))
   .catch((error) => console.error("Error:", error));
 
