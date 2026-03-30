@@ -285,7 +285,7 @@ Pay.hasMany(Score, {
 
 
 sequelize
-  .sync({ alter: false })
+  .sync({ alter: true })
   .then(() => console.log("Database synchronized!"))
   .catch((error) => console.error("Error:", error));
 
