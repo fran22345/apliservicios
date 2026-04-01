@@ -548,17 +548,23 @@ app.get("/availability", async (req, res) => {
 
 app.post("/messages", async (req, res) => {
   try {
-    const { conversationId, senderId, text } = req.body;
+    console.log("BODY:", req.body); // para debug
+
+    const { conversationId, senderId, content } = req.body;
+
+    if (!content || !content.trim()) {
+      return res.status(400).json({ error: "Mensaje vacío" });
+    }
 
     const message = await Message.create({
       conversationId,
       senderId,
-      text,
+      content,
     });
 
     res.json(message);
   } catch (error) {
-    console.error(error);
+    console.error("ERROR REAL:", error);
     res.status(500).json({ error: "Error al crear mensaje" });
   }
 });
