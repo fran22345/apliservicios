@@ -293,19 +293,6 @@ app.put("/servicioConcluido", async (req, res) => {
   }
 });
 
-app.get("/messages", async (req, res) => {
-  const messages = await Message.findAll({
-    include: [{ model: User, as: "user" }],
-  });
-  res.json(messages);
-});
-
-app.post("/messages", async (req, res) => {
-  const { userId, content } = req.body;
-  const message = await Message.create({ userId, content });
-  res.json(message);
-});
-
 
 app.get("/scores/:googleId", async (req, res) => {
   const { googleId } = req.params;
@@ -548,7 +535,6 @@ app.get("/availability", async (req, res) => {
 
 app.post("/messages", async (req, res) => {
   try {
-    console.log("BODY:", req.body); // para debug
 
     const { conversationId, senderId, content } = req.body;
 
