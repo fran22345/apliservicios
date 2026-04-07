@@ -1,6 +1,6 @@
 const express = require("express");
 const cors = require("cors");
-const { sequelize, User, Message, Score, Services, Notification, Pay, Availability } = require("./models");
+const { sequelize, User, Message, Score, Services, Notification, Pay, Availability, Conversation } = require("./models");
 const { webhookHandler } = require("./controllers/webhookHandler");
 require("dotenv").config();
 const { createPayment } = require("./controllers/payment.controllers");
@@ -535,11 +535,18 @@ app.get("/availability", async (req, res) => {
 
 app.post("/messages", async (req, res) => {
   try {
-
     const { conversationId, senderId, content } = req.body;
 
     if (!content || !content.trim()) {
       return res.status(400).json({ error: "Mensaje vacío" });
+    }
+
+    const conversation = await Conversation.findByPk(conversationId);
+
+    if (!conversation) {
+      return res.status(404).json({
+        error: "La conversación no existe",
+      });
     }
 
     const message = await Message.create({
@@ -556,9 +563,9 @@ app.post("/messages", async (req, res) => {
 });
 
 app.get("/messages/:conversationId", async (req, res) => {
-  try {
-    const { conversationId } = req.params;
+  const { conversationId } = req.params;
 
+  try {
     const messages = await Message.findAll({
       where: { conversationId },
       order: [["createdAt", "ASC"]],
@@ -566,7 +573,31 @@ app.get("/messages/:conversationId", async (req, res) => {
 
     res.json(messages);
   } catch (error) {
-    res.status(500).json({ error: "Error al obtener mensajes" });
+    res.status(500).json({ error: "Error trayendo mensajes" });
+  }
+});
+
+app.post("/conversations", async (req, res) => {
+  const { user1Id, user2Id } = req.body;
+
+  try {
+    let conversation = await Conversation.findOne({
+      where: {
+        user1Id,
+        user2Id,
+      },
+    });
+
+    if (!conversation) {
+      conversation = await Conversation.create({
+        user1Id,
+        user2Id,
+      });
+    }
+
+    res.json(conversation);
+  } catch (error) {
+    res.status(500).json({ error: "Error en conversación" });
   }
 });
 
